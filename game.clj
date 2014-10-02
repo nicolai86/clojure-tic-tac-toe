@@ -49,12 +49,18 @@
 (defn gameover? [board]
   (or (has-won? board 0) (has-won? board 1) (board-full? board)))
 
-; sideeffects
+; side effects
 (defn read-move []
-  (let [line (read-line)
-        [x y] (clojure.string/split line #"\s|,")]
-    [(Integer/parseInt x) (Integer/parseInt y)]))
+  (try
+    (let [line (read-line)
+          [x y] (clojure.string/split line #"\s|,")]
+      (try)
+      [(Integer/parseInt x) (Integer/parseInt y)])
+    (catch Exception e (read-move))))
 
+; 0/0 1/0 2/0
+; 0/1 1/1 2/1
+; 0/2 1/2 2/2
 (defn write-move [board player x y]
   (assoc (into [] board) (+ x (* y 3)) player))
 
@@ -63,6 +69,11 @@
     (println (row board 0))
     (println (row board 1))
     (println (row board 2))))
+
+(defn valid-move? [board x y]
+  (try
+    (= -1 (nth board (+ x (* y 3))))
+    (catch Exception e false)))
 
 ; play!
 (defn play [board]
@@ -77,17 +88,21 @@
 
     ; ask for move
     (let [[x y] (read-move)]
-      (println "Move (x/y): " x y)
+      (if (valid-move? current-board x y)
+        (do
+          (println "Move (x/y): " x y)
+          (let [next-board (write-move current-board player x y)]
+            (if (gameover? next-board)
+              (do
+                (println "done:")
+                (print-board next-board)
+                (if (has-won? next-board 0)
+                  (println "player 0 won")
+                  (if (has-won? next-board 1)
+                    (println "player 1 won")
+                    (println "draw!"))))
+              (recur (first upcoming) (rest upcoming) next-board))
+            ))
+        (recur player upcoming current-board))))))
 
-      (let [next-board (write-move current-board player x y)]
-        (if (gameover? next-board)
-          (do
-            (println "done:")
-            (print-board next-board)
-            (if (has-won? next-board 0)
-              (println "player 0 won")
-              (if (has-won? next-board 1)
-                (println "player 1 won")
-                (println "draw!"))))
-          (recur (first upcoming) (rest upcoming) next-board))
-        )))))
+;(play (gen-board))
