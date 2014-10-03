@@ -10,44 +10,26 @@
 
 ; extract rows, cols and diags
 (defn row [board row-nr]
-  "row-nr has to be less or equal to 2"
   (take 3 (drop (* 3 row-nr) board)))
 
 (defn col [board col-nr]
-  "col-nr has to be less or equal to 2"
   (let [[x y z] (range col-nr 9 3)]
     [(nth board x) (nth board y) (nth board z)]))
 
-(defn ldiag [board]
-  (let [[x y z] (range 0 9 4)]
-    [(nth board x) (nth board y) (nth board z)]))
-
-(defn rdiag [board]
-  (let [[x y z] (range 2 8 2)]
-    [(nth board x) (nth board y) (nth board z)]))
+(defn ldiag [board] [(nth board 0) (nth board 4) (nth board 8)])
+(defn rdiag [board] [(nth board 2) (nth board 4) (nth board 6)])
 
 ; game logic
-(defn has-row? [board player]
-  "checks if player has 3 hits in any row"
-  (or (every? #(= player %) (row board 0)) (every? #(= player %) (row board 1)) (every? #(= player %) (row board 2))))
-
-(defn has-col? [board player]
-  "checks if player has 3 hits in any col"
-  (or (every? #(= player %) (col board 0)) (every? #(= player %) (col board 1)) (every? #(= player %) (col board 2))))
-
-(defn has-diag? [board player]
-  "checks if player has 3 hits in any diagonal"
-  (or (every? #(= player %) (ldiag board)) (every? #(= player %) (rdiag board))))
-
 (defn has-won? [board player]
-  (or (has-col? board player) (has-row? board player) (has-diag? board player)))
+  (not-every? #(= false %) (conj (for [n (range 3) gen [row col]] (every? #(= player %) (gen board n)))
+                                 (every? #(= player %) (ldiag board))
+                                 (every? #(= player %) (rdiag board)))))
 
 (defn board-full? [board]
   (= 0 (count (filter #(= -1 %) board))))
 
-; TODO rewrite as comprehension
 (defn gameover? [board]
-  (or (has-won? board 0) (has-won? board 1) (board-full? board)))
+  (not-every? #(= false %) [(has-won? board 0) (has-won? board 1) (board-full? board)]))
 
 ; side effects
 (defn read-move []
@@ -56,7 +38,7 @@
           [x y] (clojure.string/split line #"\s|,")]
       (try)
       [(Integer/parseInt x) (Integer/parseInt y)])
-    (catch Exception e (read-move))))
+    (catch NumberFormatException e (read-move))))
 
 ; 0/0 1/0 2/0
 ; 0/1 1/1 2/1
@@ -65,10 +47,7 @@
   (assoc (into [] board) (+ x (* y 3)) player))
 
 (defn print-board [board]
-  (do
-    (println (row board 0))
-    (println (row board 1))
-    (println (row board 2))))
+  (doall (for [r (range 0 3)] (println (row board r)))))
 
 (defn valid-move? [board x y]
   (try
@@ -77,18 +56,19 @@
 
 ; play!
 (defn play [board]
-  (let [players (take 100 player-cycle)]
+  (let [players (take 10 player-cycle)]
     (loop [player (first players)
          upcoming (rest players)
          current-board board]
-    ; print current player
+
+    ; print current status
     (println "Player: " player)
-    ; print the board
     (print-board current-board)
 
     ; ask for move
     (let [[x y] (read-move)]
       (if (valid-move? current-board x y)
+
         (do
           (println "Move (x/y): " x y)
           (let [next-board (write-move current-board player x y)]
@@ -104,5 +84,3 @@
               (recur (first upcoming) (rest upcoming) next-board))
             ))
         (recur player upcoming current-board))))))
-
-;(play (gen-board))
