@@ -73,11 +73,10 @@
                 (do
                   (println "done:")
                   (print-board next-board)
-                  (if (has-won? next-board 0)
-                    (println "player 0 won")
-                    (if (has-won? next-board 1)
-                      (println "player 1 won")
-                      (println "draw!"))))
+                  (cond
+                   (has-won? next-board 0) (println "player 0 won")
+                   (has-won? next-board 1) (println "player 1 won")
+                   :else (println "draw!")))
 
                 (recur (first upcoming) (rest upcoming) next-board))))
           (recur player upcoming current-board))))))
